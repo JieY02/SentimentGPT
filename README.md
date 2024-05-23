@@ -3,6 +3,14 @@
 ![](https://img.shields.io/badge/CUDA-12.1-yellow)
 ![](https://img.shields.io/badge/PyTorch-2.3.0-red)
 
+Because of the memory limit of github, the model couldn't update in github. Therefore, I update it in BaiduCloud, which could be entered via this link.
+![trained model link](链接：https://pan.baidu.com/s/1ziaMp5th9Oazx4BwJsVvpg?pwd=DATA)
+```
+链接：https://pan.baidu.com/s/1ziaMp5th9Oazx4BwJsVvpg?pwd=DATA 
+提取码：DATA 
+--来自百度网盘超级会员V1的分享
+```
+
 The pilot coding work of "Advancing Sentiment Analysis on Social Media: Integrating Feature Extraction and GPT-4 for Enhanced Emotional Recognition"
 
 This project uses a GPT-2 model to perform sentiment and emotion analysis on tweets. The model is fine-tuned on a custom dataset containing tweets with annotated sentiments and emotions.
