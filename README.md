@@ -4,7 +4,7 @@
 ![](https://img.shields.io/badge/PyTorch-2.3.0-red)
 
 Because of the memory limit of github, the model couldn't update in github. Therefore, I update it in BaiduCloud, which could be entered via this link.
-![trained model link](链接：https://pan.baidu.com/s/1ziaMp5th9Oazx4BwJsVvpg?pwd=DATA)
+[trained model link](链接：https://pan.baidu.com/s/1ziaMp5th9Oazx4BwJsVvpg?pwd=DATA)
 ```
 链接：https://pan.baidu.com/s/1ziaMp5th9Oazx4BwJsVvpg?pwd=DATA 
 提取码：DATA 
