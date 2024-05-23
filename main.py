@@ -93,22 +93,21 @@ class SentimentEmotionModel(nn.Module):
         super(SentimentEmotionModel, self).__init__()
         self.gpt = gpt_model
         self.sentiment_classifier = nn.Linear(self.gpt.config.hidden_size, num_sentiments)
-        self.sentiment_score = nn.Linear(self.gpt.config.hidden_size, 1)
         self.emotion_classifier = nn.Linear(self.gpt.config.hidden_size, num_emotions)
-        self.emotion_score = nn.Linear(self.gpt.config.hidden_size, 1)
+        self.softmax = nn.Softmax(dim=1)
 
     def forward(self, input_ids, attention_mask):
         outputs = self.gpt(input_ids, attention_mask=attention_mask)
         last_hidden_state = outputs.last_hidden_state
-        pooled_output = last_hidden_state[:, -1, :]  # 使用最后一个token的hidden state
+        pooled_output = last_hidden_state[:, -1, :]
 
         sentiment_logits = self.sentiment_classifier(pooled_output)
-        sentiment_score = torch.sigmoid(self.sentiment_score(pooled_output))
-
         emotion_logits = self.emotion_classifier(pooled_output)
-        emotion_score = torch.sigmoid(self.emotion_score(pooled_output))
 
-        return sentiment_logits, sentiment_score, emotion_logits, emotion_score
+        sentiment_probs = self.softmax(sentiment_logits)
+        emotion_probs = self.softmax(emotion_logits)
+
+        return sentiment_probs, emotion_probs
 
 # 划分数据集
 logger.info("Splitting dataset into train and validation sets...")
@@ -154,16 +153,13 @@ def train_epoch(model, data_loader, optimizer, criterion, device):
         input_ids = batch['input_ids'].to(device)
         attention_mask = batch['attention_mask'].to(device)
         sentiments = batch['sentiment'].to(device)
-        sentiment_scores = batch['sentiment_score'].to(device)
         emotions = batch['emotion'].to(device)
-        emotion_scores = batch['emotion_score'].to(device)
 
         optimizer.zero_grad()
-        sentiment_logits, predicted_sentiment_scores, emotion_logits, predicted_emotion_scores = model(
-            input_ids, attention_mask)
+        sentiment_probs, emotion_probs = model(input_ids, attention_mask)
 
-        sentiment_loss = criterion(sentiment_logits, sentiments)
-        emotion_loss = criterion(emotion_logits, emotions)
+        sentiment_loss = criterion(sentiment_probs, sentiments)
+        emotion_loss = criterion(emotion_probs, emotions)
 
         loss = sentiment_loss + emotion_loss
         loss.backward()
@@ -185,22 +181,19 @@ def eval_model(model, data_loader, criterion, device):
             input_ids = batch['input_ids'].to(device)
             attention_mask = batch['attention_mask'].to(device)
             sentiments = batch['sentiment'].to(device)
-            sentiment_scores = batch['sentiment_score'].to(device)
             emotions = batch['emotion'].to(device)
-            emotion_scores = batch['emotion_score'].to(device)
 
-            sentiment_logits, predicted_sentiment_scores, emotion_logits, predicted_emotion_scores = model(
-                input_ids, attention_mask)
+            sentiment_probs, emotion_probs = model(input_ids, attention_mask)
 
-            sentiment_loss = criterion(sentiment_logits, sentiments)
-            emotion_loss = criterion(emotion_logits, emotions)
+            sentiment_loss = criterion(sentiment_probs, sentiments)
+            emotion_loss = criterion(emotion_probs, emotions)
 
             loss = sentiment_loss + emotion_loss
             total_loss += loss.item()
 
-            sentiment_preds.extend(torch.argmax(sentiment_logits, dim=1).cpu().numpy())
+            sentiment_preds.extend(torch.argmax(sentiment_probs, dim=1).cpu().numpy())
             sentiment_true.extend(sentiments.cpu().numpy())
-            emotion_preds.extend(torch.argmax(emotion_logits, dim=1).cpu().numpy())
+            emotion_preds.extend(torch.argmax(emotion_probs, dim=1).cpu().numpy())
             emotion_true.extend(emotions.cpu().numpy())
 
     sentiment_acc = accuracy_score(sentiment_true, sentiment_preds)
@@ -228,16 +221,13 @@ with torch.no_grad():
         input_ids = batch['input_ids'].to(device)
         attention_mask = batch['attention_mask'].to(device)
         sentiments = batch['sentiment'].to(device)
-        sentiment_scores = batch['sentiment_score'].to(device)
         emotions = batch['emotion'].to(device)
-        emotion_scores = batch['emotion_score'].to(device)
 
-        sentiment_logits, predicted_sentiment_scores, emotion_logits, predicted_emotion_scores = model(
-            input_ids, attention_mask)
+        sentiment_probs, emotion_probs = model(input_ids, attention_mask)
 
-        val_preds_sentiments.extend(torch.argmax(sentiment_logits, dim=1).cpu().numpy())
+        val_preds_sentiments.extend(torch.argmax(sentiment_probs, dim=1).cpu().numpy())
         val_labels_sentiments.extend(sentiments.cpu().numpy())
-        val_preds_emotions.extend(torch.argmax(emotion_logits, dim=1).cpu().numpy())
+        val_preds_emotions.extend(torch.argmax(emotion_probs, dim=1).cpu().numpy())
         val_labels_emotions.extend(emotions.cpu().numpy())
 
 sentiment_acc = accuracy_score(val_labels_sentiments, val_preds_sentiments)
